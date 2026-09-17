@@ -224,7 +224,7 @@ public partial class SichuanWindow : Window
             if(id==0)continue;
             var img=i<s.ImageFiles.Length?ImageFor(s.ImageFiles[i]):null;
             if(img!=null){var image=new Image{Source=img,Width=cell-14,Height=cell-14,Stretch=Stretch.Uniform};Canvas.SetLeft(image,x+7);Canvas.SetTop(image,y+7);BoardCanvas.Children.Add(image);}
-            else{string label=(id/1000) switch{1=>"服装",2=>"食物",10=>"岩石",11=>"钥匙",12=>"锁",13=>"计时",_=>"?"};Label(label+" "+(id%1000),x+3,y+9,cell-6,26,13,Brushes.DarkSlateGray);}
+            else{string label=(id/1000) switch{1=>"服装",2=>"食物",10=>"岩石",11=>"钥匙",12=>"锁",13=>"计时",_=>"?"};Label(label+"\n"+(id%1000),x+3,y+4,cell-6,36,12,Brushes.DarkSlateGray);}
             if(marked)Label(i==move!.First?"①":"②",x+4,y+cell-28,26,26,20,new SolidColorBrush(Color.FromRgb(0,70,145)));
             else if(i==s.SelectedIndex)Label("已选",x,y+cell-20,cell,20,11,Brushes.DarkBlue);
         }
@@ -266,6 +266,11 @@ public partial class SichuanWindow : Window
         LanguageBox.SelectedIndex=1;ShowAutomation();drawKey="";Draw(null);UpdateLayout();
         await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
         Check(BoardCanvas.Children.OfType<TextBlock>().Any(t=>t.Text.StartsWith("Costume")),"dynamic board labels localize after creation: "+string.Join(" | ",BoardCanvas.Children.OfType<TextBlock>().Select(t=>t.Text)));
+        Check(BoardCanvas.Children.OfType<TextBlock>().Where(t=>t.Text.StartsWith("Costume")).All(t=>
+        {
+            var text=new FormattedText(t.Text,System.Globalization.CultureInfo.InvariantCulture,FlowDirection.LeftToRight,new Typeface(t.FontFamily,t.FontStyle,t.FontWeight,t.FontStretch),t.FontSize,t.Foreground,1.0);
+            return t.Text.Contains('\n') && text.WidthIncludingTrailingWhitespace<=t.Width && text.Height+t.Padding.Top<=t.Height;
+        }),"English fallback tile category and identifier fit without clipping");
         Check(ConnectButton.Content.ToString()=="Connect game" && AutoButton.Content.ToString()=="Auto-play round","English action labels");
         Check(AutomationText.Text.Contains("continues automatically") && automation.Active && automation.OwnerId==ownerBeforeLanguage,"live language switch preserves active run and translates pause");
         Check(LanguagePreference.Read(files.Root)=="en-US" && files.IntervalMilliseconds==1000,"language preference saved independently of interval");

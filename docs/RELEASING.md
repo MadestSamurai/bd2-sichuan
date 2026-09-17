@@ -27,3 +27,7 @@ Portable 内置固定 .NET Desktop Runtime；Lite 使用 Microsoft.WindowsDeskto
 - [ ] 仅在确认接口不兼容后更新引导定义、生成契约，并复核新旧客户端。
 
 构建、测试、签名/发布产物均与原私有项目隔离。不得复制旧父仓库 Git 历史或私密资料。
+
+## Languages
+
+Every Portable/Lite EXE includes Chinese and English. ZIPs include both README files. Release notes contain both language sections and a runtime comparison table. See [Localization](LOCALIZATION.md).

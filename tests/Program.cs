@@ -110,5 +110,6 @@ Check(SichuanLiveFiles.Invalid(read,now,false)==null,"Hook serializer accepted b
 read.Cells=null!;Check(SichuanLiveFiles.Invalid(read,now,false)!=null,"null wire cells rejected");
 groups.Add("freshness, runtime/process/generation isolation, atomic lease, wire serialization");
 checks+=ExecutionTests.Run(evidence);checks+=IntervalTests.Run(evidence);groups.Add("guarded single/automatic execution, idempotency, readback, stop and wire roundtrip");
+checks+=LocalizationTests.Run();
 var report=new{status="pass",checks,boards,pairs,groups,gameRequests=0,injection=false};
 File.WriteAllText(Path.Combine(evidence,"results.json"),JsonSerializer.Serialize(report,new JsonSerializerOptions{WriteIndented=true}));Console.WriteLine(JsonSerializer.Serialize(report));Console.WriteLine(evidence);

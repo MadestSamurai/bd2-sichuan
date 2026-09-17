@@ -1,4 +1,5 @@
 using System.IO;
+using BD2Sichuan.Localization;
 using System.Reflection;
 using System.Text.Json;
 using System.Windows;
@@ -22,7 +23,7 @@ public partial class App:Application
             catch(Exception ex){File.WriteAllText(Path.Combine(e.Args[1],"failure.txt"),ex.ToString());Shutdown(1);}return;
         }
         single=new Mutex(true,"Local\\BD2Sichuan.Desktop",out bool first);
-        if(!first){MessageBox.Show("连连看工具已经打开，请使用现有窗口。","BD2 连连看");Shutdown();return;}
+        if(!first){var catalog=new LanguageCatalog(LanguagePreference.Read(SichuanIdentity.BoardRoot));MessageBox.Show(catalog.Text("连连看工具已经打开，请使用现有窗口。"),catalog.Text("BD2 连连看"));Shutdown();return;}
         var main=new SichuanWindow();MainWindow=main;main.Show();
     }
     protected override void OnExit(ExitEventArgs e){single?.Dispose();base.OnExit(e);}

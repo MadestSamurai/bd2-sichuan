@@ -1,4 +1,5 @@
 using System.IO;
+using BD2Sichuan.Localization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -9,6 +10,7 @@ using BD2Sichuan;
 namespace BD2Sichuan.Desktop;
 public partial class SichuanWindow : Window
 {
+    private WindowLanguage? language;
     private readonly SichuanLiveFiles files;
     private readonly string settingsPath;
     private bool connecting;
@@ -27,9 +29,16 @@ public partial class SichuanWindow : Window
         files.IntervalMilliseconds=SichuanSettings.Read(settingsPath).IntervalMilliseconds;
         IntervalBox.Text=files.IntervalMilliseconds.ToString();
         link=new(files);
+        language=new(this,LanguagePreference.Read(files.Root));LanguageBox.SelectedIndex=language.Catalog.Language=="zh-CN"?0:1;
         timer.Tick+=async(_,_)=>await RefreshAsync();
         Closing+=(_,e)=>{if(connecting){e.Cancel=true;ConnectionText.Text="正在完成连接，请稍后关闭。";}};
-        Closed+=(_,_)=>{StopAutomation("window_closed");closed=true;enabled=false;timer.Stop();solve?.Cancel();link.Dispose();};
+        Closed+=(_,_)=>{StopAutomation("window_closed");closed=true;enabled=false;timer.Stop();solve?.Cancel();link.Dispose();language?.Dispose();};
+    }
+    private void LanguageChanged(object sender,SelectionChangedEventArgs e)
+    {
+        if(language==null || LanguageBox.SelectedItem is not ComboBoxItem choice)return;
+        try{LanguagePreference.Save(files.Root,(string)choice.Tag);language.Select((string)choice.Tag);}
+        catch(Exception ex){ConnectionText.Text=ex.Message;}
     }
     private async void Connect_Click(object sender,RoutedEventArgs e)
     {
@@ -199,7 +208,7 @@ public partial class SichuanWindow : Window
         var s=current;
         string nextDraw=(s==null?"":SichuanLiveFiles.Key(s)+":"+s.State+":"+s.SelectedIndex+":"+string.Join(",",s.ImageFiles))+":"+(move==null?"":string.Join(",",move.Path));
         if(nextDraw==drawKey)return;drawKey=nextDraw;
-        BoardCanvas.Children.Clear();
+        language?.Forget(BoardCanvas);BoardCanvas.Children.Clear();
         if(s==null||s.Cells.Length==0){EmptyText.Visibility=Visibility.Visible;return;}
         EmptyText.Visibility=Visibility.Collapsed;double cell=68,pad=28;
         BoardCanvas.Width=s.Width*cell+pad;BoardCanvas.Height=s.Height*cell+pad;
@@ -222,12 +231,13 @@ public partial class SichuanWindow : Window
         if(move!=null){var line=new Polyline{Stroke=new SolidColorBrush(Color.FromRgb(0,104,200)),StrokeThickness=3,StrokeDashArray=new DoubleCollection{2,1},IsHitTestVisible=false};foreach(var i in move.Path)line.Points.Add(new(pad+(i%s.Width+.5)*cell,pad+(i/s.Width+.5)*cell));BoardCanvas.Children.Add(line);}
     }
     private void Label(string value,double x,double y,double w,double h,int font,Brush color)
-    {var t=new TextBlock{Text=value,Width=w,Height=h,FontSize=font,Foreground=color,TextAlignment=TextAlignment.Center,Padding=new(0,2,0,0)};Canvas.SetLeft(t,x);Canvas.SetTop(t,y);BoardCanvas.Children.Add(t);}
+    {var t=new TextBlock{Text=value,Width=w,Height=h,FontSize=font,Foreground=color,TextAlignment=TextAlignment.Center,Padding=new(0,2,0,0)};Canvas.SetLeft(t,x);Canvas.SetTop(t,y);BoardCanvas.Children.Add(t);language?.Include(t);}
     public async Task SmokeAsync(string output)
     {
+        LanguageBox.SelectedIndex=0;language!.Select("zh-CN");
         Directory.CreateDirectory(output);Show();current=new(){SessionId="smoke",Generation=1,Width=8,Height=6,Cells=new[]{0,0,0,0,0,0,0,0,0,1001,1002,11001,11001,1002,1001,0,0,2001,12001,10001,10001,12001,2001,0,0,2002,13001,2003,2003,13001,2002,0,0,1003,1004,1005,1005,1004,1003,0,0,0,0,0,0,0,0,0},State="ready",LevelGroup=1,Level=3,RemainingSeconds=86.4f};
         activeKey=SichuanLiveFiles.Key(current);var value=SichuanSolver.Solve(current.Width,current.Height,current.Cells);Complete(current,activeKey,value);await AcceptAsync(current);
-        foreach(var size in new[]{(1050d,800d),(720d,560d)}){Width=size.Item1;Height=size.Item2;UpdateLayout();await Task.Delay(100);var bitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(this);var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var f=File.Create(System.IO.Path.Combine(output,$"sichuan-{size.Item1}.png"));encoder.Save(f);}
+        foreach(var size in new[]{(1050d,800d),(720d,640d)}){Width=size.Item1;Height=size.Item2;UpdateLayout();await Task.Delay(100);var bitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(this);var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var f=File.Create(System.IO.Path.Combine(output,$"sichuan-{size.Item1}.png"));encoder.Save(f);}
         var assertions=new List<string>();
         void Check(bool ok,string label){if(!ok)throw new InvalidOperationException(label);assertions.Add(label);}
         Check(IntervalBox.Text=="1000"&&files.IntervalMilliseconds==1000,"fresh standalone default is 1000ms");
@@ -249,6 +259,18 @@ public partial class SichuanWindow : Window
         TransientFailure("模拟短暂读取失败");Check(automation.Active,"transient file failure does not revoke active run");
         current.Run=new(){OwnerId=automation.OwnerId,State="waiting",Reason="paused",ConfirmedPairs=3};AdvanceAutomation(current);
         Check(automation.Active&&AutomationText.Text.Contains("恢复后"),"game pause remains armed in UI");
+        var ownerBeforeLanguage=automation.OwnerId;
+        drawKey="";Draw(null);var tracked=language!.TrackedControlCount;
+        for(int i=0;i<20;i++){drawKey="";Draw(null);}
+        Check(language.TrackedControlCount==tracked,"board redraw releases obsolete localization listeners");
+        LanguageBox.SelectedIndex=1;ShowAutomation();drawKey="";Draw(null);UpdateLayout();
+        await Dispatcher.InvokeAsync(()=>{},DispatcherPriority.ApplicationIdle);
+        Check(BoardCanvas.Children.OfType<TextBlock>().Any(t=>t.Text.StartsWith("Costume")),"dynamic board labels localize after creation: "+string.Join(" | ",BoardCanvas.Children.OfType<TextBlock>().Select(t=>t.Text)));
+        Check(ConnectButton.Content.ToString()=="Connect game" && AutoButton.Content.ToString()=="Auto-play round","English action labels");
+        Check(AutomationText.Text.Contains("continues automatically") && automation.Active && automation.OwnerId==ownerBeforeLanguage,"live language switch preserves active run and translates pause");
+        Check(LanguagePreference.Read(files.Root)=="en-US" && files.IntervalMilliseconds==1000,"language preference saved independently of interval");
+        foreach(var size in new[]{(1050d,800d),(720d,640d)}){Width=size.Item1;Height=size.Item2;UpdateLayout();await Task.Delay(100);var bitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(this);var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var f=File.Create(System.IO.Path.Combine(output,$"sichuan-en-{size.Item1}.png"));encoder.Save(f);}
+        LanguageBox.SelectedIndex=0;ShowAutomation();Check(ConnectButton.Content.ToString()=="连接游戏" && automation.OwnerId==ownerBeforeLanguage,"switch back preserves active run");
         StopAutomation("user_stop");Check(!automation.Active&&!StopButton.IsEnabled,"stop releases execution immediately");
         Check(System.Text.Json.JsonSerializer.Deserialize<SichuanActionLease>(File.ReadAllText(System.IO.Path.Combine(files.Root,"execution-lease.json")))!.UntilUtcTicks==0,"stop writes revoked lease");
         Close();Check(closed&&!timer.IsEnabled,"closing child stops only local polling");

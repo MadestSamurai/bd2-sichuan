@@ -1,5 +1,7 @@
 # BD2 Sichuan
 
+> **Disclaimer:** Using this assistant carries risks, including account penalties or bans, game errors, and data loss. This project is not affiliated with the game publisher and does not guarantee safe use. Assess the risks and follow the game?s rules; you assume responsibility for all risks and consequences of using the tool.
+
 English · [简体中文](README.md)
 
 A standalone Windows assistant for BrownDust II's Sichuan (tile-matching) minigame. It reads the live board, suggests a legal pair and connecting path, and can play one pair or the current round automatically.

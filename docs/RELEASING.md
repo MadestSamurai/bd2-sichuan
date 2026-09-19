@@ -31,3 +31,9 @@ Portable 内置固定 .NET Desktop Runtime；Lite 使用 Microsoft.WindowsDeskto
 ## Languages
 
 Every Portable/Lite EXE includes Chinese and English. ZIPs include both README files. Release notes contain both language sections and a runtime comparison table. See [Localization](LOCALIZATION.md).
+
+## 文档格式 / Documentation format
+
+README、仓库简介和 Release 统一遵循 [Publication style](PUBLICATION_STYLE.md)。新版本从 [Release template](RELEASE_TEMPLATE.md) 开始，更新 [当前版本说明](RELEASE_NOTES.md) 后再打包。
+
+Use the shared format for READMEs, repository descriptions and releases. Update both languages and release notes before packaging.

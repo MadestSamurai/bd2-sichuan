@@ -1,13 +1,10 @@
-# BD2 Sichuan v0.3.0
+# BD2 Sichuan vX.Y.Z
 
 ## 简体中文
 
 ### 更新内容
 
-- 内置英语界面，覆盖按钮、提示、运行状态及工具错误。顶部随时切换简体中文／English，记住选择，不重启正在运行的任务。
-- 附独立英文 README；两种语言共用 Portable／Lite 下载，无需单独语言包。
-- 调整顶部布局和小窗口尺寸，让英文提示和盘面都可读。
-- 保留默认 1000 ms 可调配对间隔、单步消除、自动本局、暂停／洗牌续接及停止控制。
+- 说明用户可以感知的变化。
 
 ### 下载
 
@@ -28,10 +25,7 @@
 
 ### Changes
 
-- Built-in English UI covering controls, hints, live status and tool errors. Switch between Chinese and English at any time; the choice is saved without restarting an active run.
-- Separate English README. Both languages are included in each Portable/Lite download.
-- A compact header and revised minimum window size keep the board and longer English text readable.
-- Keeps adjustable pair timing (1000 ms by default), single-pair execution, auto-play for the current round, pause/shuffle recovery and immediate stop.
+- Describe a user-visible change.
 
 ### Downloads
 

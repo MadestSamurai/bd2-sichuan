@@ -24,7 +24,7 @@ public partial class SichuanWindow : Window
     private SichuanSnapshot? current,solvedBoard;private SichuanSolution? result,solvedResult;
     public SichuanWindow(string? root=null)
     {
-        InitializeComponent();files=new(root??SichuanIdentity.BoardRoot);
+        InitializeComponent();BD2.Distribution.DistributionNotice.Attach(this,LanguageBox);files=new(root??SichuanIdentity.BoardRoot);
         settingsPath=System.IO.Path.Combine(files.Root,"settings.json");
         files.IntervalMilliseconds=SichuanSettings.Read(settingsPath).IntervalMilliseconds;
         IntervalBox.Text=files.IntervalMilliseconds.ToString();

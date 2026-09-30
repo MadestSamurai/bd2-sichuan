@@ -3,6 +3,7 @@ namespace BD2Sichuan
 {
     public static partial class SichuanIdentity
     {
+        public const string LiveEntries="runtime.json|sichuan~latest.json|sichuan~enabled-until.txt|sichuan~run-command.json|sichuan~execution-lease.json|sichuan~network-status.json";
         public const string RuntimeName="BD2Sichuan.Runtime2";
         public static string DataRoot=>System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"BD2Sichuan");
         public static string BoardRoot=>System.IO.Path.Combine(DataRoot,"sichuan");

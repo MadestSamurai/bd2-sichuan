@@ -12,7 +12,7 @@ A standalone tile-matching assistant for the BrownDust II Windows client. Reads 
 
 ## Download
 
-Current version: **0.3.1**. Both editions have the same features and include Simplified Chinese / English.
+Source version: **0.3.2**. Both editions have the same features and include Simplified Chinese / English.
 
 | Edition | Runtime requirement | Recommended for |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Download one edition: the EXE runs on its own; ZIPs include both READMEs and lic
 
 ## Quick start
 
-**Before upgrading:** pause and close the old assistant, restart the game normally, then connect with the new version.
+**Before upgrading:** stop and close the old assistant. Follow the connection and tool switching section below; current components support same-process handoff.
 
 1. Open the actual tile-matching board.
 2. Open the assistant, click **Connect game**, and wait for the board and hints. No manual pair is required first.
@@ -56,7 +56,7 @@ Releases contain no game DLLs, resources, account inventories or private capture
 Settings and diagnostics are under `%LOCALAPPDATA%\BD2Sichuan`; board files are in its `sichuan` subfolder.
 
 - **Waiting for board:** connect and open the actual minigame; menus and loading screens have no playable board.
-- **Another component is loaded:** close the old tool and restart the game before reconnecting.
+- **Another component is loaded:** stop the other tool and reconnect; see the legacy migration requirements below.
 - **Compatibility check fails:** use the latest release and report the error plus a redacted `compatibility.json`.
 - **Missing icons:** images are only visual aids; pairing uses the logical board.
 
@@ -78,3 +78,7 @@ Assets are written to `dist/v<version>/`. Packaging checks both runtime configur
 ## License
 
 Project code is [MIT licensed](LICENSE). Dependencies retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). This project is not affiliated with the game developer or publisher.
+
+## Connection and tool switching
+
+When upgrading from an older release for the first time, close the old tools and restart the game once. These updated tools can then update and switch within the same game process: pending game operations finish before control changes. Settings and records are retained. Live communication uses local named pipes. Modules used by the daily workflow are coordinated separately by its scheduler.

@@ -234,6 +234,7 @@ public partial class SichuanWindow : Window
     {var t=new TextBlock{Text=value,Width=w,Height=h,FontSize=font,Foreground=color,TextAlignment=TextAlignment.Center,Padding=new(0,2,0,0)};Canvas.SetLeft(t,x);Canvas.SetTop(t,y);BoardCanvas.Children.Add(t);language?.Include(t);}
     public async Task SmokeAsync(string output)
     {
+        timer.Stop(); TestTransport.Start(files.Root,"latest.json|enabled-until.txt|run-command.json|execution-lease.json|network-status.json");
         LanguageBox.SelectedIndex=0;language!.Select("zh-CN");
         Directory.CreateDirectory(output);Show();current=new(){SessionId="smoke",Generation=1,Width=8,Height=6,Cells=new[]{0,0,0,0,0,0,0,0,0,1001,1002,11001,11001,1002,1001,0,0,2001,12001,10001,10001,12001,2001,0,0,2002,13001,2003,2003,13001,2002,0,0,1003,1004,1005,1005,1004,1003,0,0,0,0,0,0,0,0,0},State="ready",LevelGroup=1,Level=3,RemainingSeconds=86.4f};
         activeKey=SichuanLiveFiles.Key(current);var value=SichuanSolver.Solve(current.Width,current.Height,current.Cells);Complete(current,activeKey,value);await AcceptAsync(current);
@@ -277,9 +278,9 @@ public partial class SichuanWindow : Window
         foreach(var size in new[]{(1050d,800d),(720d,640d)}){Width=size.Item1;Height=size.Item2;UpdateLayout();await Task.Delay(100);var bitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(this);var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using var f=File.Create(System.IO.Path.Combine(output,$"sichuan-en-{size.Item1}.png"));encoder.Save(f);}
         LanguageBox.SelectedIndex=0;ShowAutomation();Check(ConnectButton.Content.ToString()=="连接游戏" && automation.OwnerId==ownerBeforeLanguage,"switch back preserves active run");
         StopAutomation("user_stop");Check(!automation.Active&&!StopButton.IsEnabled,"stop releases execution immediately");
-        Check(System.Text.Json.JsonSerializer.Deserialize<SichuanActionLease>(File.ReadAllText(System.IO.Path.Combine(files.Root,"execution-lease.json")))!.UntilUtcTicks==0,"stop writes revoked lease");
+        Check(System.Text.Json.JsonSerializer.Deserialize<SichuanActionLease>(TestTransport.Text(System.IO.Path.Combine(files.Root,"execution-lease.json")))!.UntilUtcTicks==0,"stop writes revoked lease");
         Close();Check(closed&&!timer.IsEnabled,"closing child stops only local polling");
-        Check(File.ReadAllText(System.IO.Path.Combine(files.Root,"enabled-until.txt"))=="0","closing child releases local capture lease");
+        Check(TestTransport.Text(System.IO.Path.Combine(files.Root,"enabled-until.txt"))=="0","closing child releases local capture lease");
         File.WriteAllText(System.IO.Path.Combine(output,"results.json"),System.Text.Json.JsonSerializer.Serialize(new{status="pass",assertions,gameRequests=0,injection=false},new System.Text.Json.JsonSerializerOptions{WriteIndented=true}));
     }
 }

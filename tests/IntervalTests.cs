@@ -21,7 +21,7 @@ internal static class IntervalTests
             bool rejected=false;try{new SichuanSettings{IntervalMilliseconds=value}.Save(settings);}catch(ArgumentOutOfRangeException){rejected=true;}Check(rejected,"invalid setting rejected");
             Check(!SichuanRunEngine.ValidInterval(value),"runtime rejects invalid interval");
         }
-        var live=new SichuanLiveFiles(Path.Combine(evidence,"live-interval"));
+        var live=new SichuanLiveFiles(Path.Combine(evidence,"live-interval"));TestTransport.Start(live.Root,"enabled-until.txt|execution-lease.json|run-command.json|latest.json");
         using(var link=new SichuanControlLink(live))
         {
             link.Start(new(){OwnerId="interval-test",SessionId="s",ProcessId=1,CreatedUtcTicks=DateTime.UtcNow.Ticks});

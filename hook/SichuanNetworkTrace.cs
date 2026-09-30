@@ -20,6 +20,7 @@ namespace BD2Sichuan.Runtime
         private readonly Dictionary<string,DateTime> awaiting=new Dictionary<string,DateTime>();
         private Timer writer;private int writing;private bool disposed;
         private string error="";
+        internal bool Waiting {get{lock(sync)return awaiting.Count>0;}}
         internal string LastState {get;private set;}="尚未观察到连连看请求";
         internal void Start(MethodInfo send)
         {

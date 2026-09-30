@@ -75,7 +75,7 @@ namespace BD2Sichuan.Runtime
             var s=Base("capture_error");s.Error=e.GetBaseException().Message;lock(sync)pending=s;
         }
         private SichuanSnapshot Base(string state)=>new SichuanSnapshot {
-            SessionId=session,ProcessId=processId,Runtime=typeof(SichuanCapture).Assembly.GetName().Name,
+            SessionId=session,ProcessId=processId,Runtime=SichuanIdentity.RuntimeName,
             ClientMvid=typeof(SichuanBoardUI).Module.ModuleVersionId.ToString(),CapturedAtUtc=DateTime.UtcNow.ToString("O"),
             Generation=generation,Revision=revision,State=state,Error=error,ExecutionProtocol=3,Run=executor.Status,LastAction=executor.Receipt,NetworkState=SichuanNetworkTrace.NetworkState};
         private void Capture()
@@ -161,7 +161,7 @@ namespace BD2Sichuan.Runtime
         }
         private T ReadCommand<T>(string name) where T:class
         {
-            try{using(var f=new FileStream(Path.Combine(root,name),FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))
+            try{using(var f=new MemoryStream((name=="run-command.json"?BD2.LocalIpc.RuntimeFiles.Take(Path.Combine(root,name)):BD2.LocalIpc.RuntimeFiles.Read(Path.Combine(root,name)))??new byte[0]))
             {if(f.Length>64000)return null;return new DataContractJsonSerializer(typeof(T)).ReadObject(f) as T;}}catch{return null;}
         }
         private void AppendJournal<T>(string name,T receipt)
@@ -201,7 +201,7 @@ namespace BD2Sichuan.Runtime
                 if(disposed)return;
                 // The UI renews an explicit local lease; a crashed/closed UI cannot keep capturing.
                 long ticks=Interlocked.Read(ref enabledUntilTicks);
-                try{using(var f=new FileStream(Path.Combine(root,"enabled-until.txt"),FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var r=new StreamReader(f))if(long.TryParse(r.ReadToEnd(),out var readTicks))ticks=readTicks;}catch{}
+                try{using(var f=new MemoryStream(BD2.LocalIpc.RuntimeFiles.Read(Path.Combine(root,"enabled-until.txt"))??new byte[0]))using(var r=new StreamReader(f))if(long.TryParse(r.ReadToEnd(),out var readTicks))ticks=readTicks;}catch{}
                 Interlocked.Exchange(ref enabledUntilTicks,ticks);
                 var command=ReadCommand<SichuanRunCommand>("run-command.json");
                 var lease=ReadCommand<SichuanActionLease>("execution-lease.json");
@@ -221,6 +221,8 @@ namespace BD2Sichuan.Runtime
             catch(Exception e){LocalStorage.Log("Sichuan capture write: "+e.GetBaseException().Message);}
             finally{Interlocked.Exchange(ref writing,0);}
         }
-        public void Dispose(){disposed=true;current=null;writer?.Dispose();harmony.UnpatchAll("bd2.standalone.sichuan.capture");}
+        internal bool Writing=>writing!=0;
+        internal void PrepareHandoff(){Interlocked.Exchange(ref enabledUntilTicks,0);lock(sync){request=null;executionLease=null;}executor.Stop("component-handoff");}
+        public void Dispose(){executor.Stop("component-unloaded");disposed=true;current=null;writer?.Dispose();harmony.UnpatchAll("bd2.standalone.sichuan.capture");}
     }
 }

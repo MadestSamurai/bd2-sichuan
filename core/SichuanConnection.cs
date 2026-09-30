@@ -15,28 +15,32 @@ public sealed class SichuanConnectionState
 public sealed class SichuanConnection
 {
     private readonly string root;
-    public SichuanConnection(string? root=null){this.root=root??SichuanIdentity.DataRoot;}
+    public SichuanConnection(string? root=null){this.root=root??SichuanIdentity.DataRoot;BD2.LocalIpc.DesktopFiles.Configure(this.root,SichuanIdentity.LiveEntries);}
     public static bool SameProcess(SichuanConnectionState s,int pid,long start)=>s.ProcessId==pid&&s.ProcessStartTicks==start;
     public static bool Fresh(SichuanRuntimeStatus? status,int pid,DateTime since)=>status!=null&&status.ProcessId==pid&&status.Runtime==SichuanIdentity.RuntimeName&&DateTime.TryParse(status.AtUtc,null,DateTimeStyles.RoundtripKind,out var when)&&when>=since&&when<=DateTime.UtcNow.AddSeconds(2);
-    public string Connect(Action<string>? progress=null)
+    public string Connect(Action<string>? progress=null,bool daily=false)
     {
         using var game=FindGame();int pid=game.Id;long start=game.StartTime.ToUniversalTime().Ticks;
-        string fingerprint=HookCompiler.ToolFingerprint;var path=Path.Combine(root,"connection.json");
-        var old=SichuanJson.Read<SichuanConnectionState>(path);
-        if(old!=null&&SameProcess(old,pid,start))
+        string fingerprint=HookCompiler.ToolFingerprint+(daily?".daily":"");var path=Path.Combine(root,"connection.json");
+        var pipe=BD2.LocalIpc.DesktopFiles.Connect(root,pid,start);
+        try
         {
-            if(old.ToolFingerprint!=fingerprint)throw new InvalidOperationException("游戏内已加载另一版连连看组件，请正常重启游戏后再连接。");
-            var report=SichuanJson.Read<SichuanRuntimeStatus>(Path.Combine(root,"runtime.json"));
-            if(Fresh(report,pid,DateTime.UtcNow.AddSeconds(-5))&&report!.State=="active")return $"已连接游戏 {pid} · 连连看独立组件";
-            if(report?.ProcessId==pid&&report.State=="error")throw new InvalidOperationException(report.Error);
-            throw new InvalidOperationException("此游戏进程已有连接记录，但组件未就绪。请等待游戏加载；仍无状态时正常重启游戏后再连接。");
+            if(pipe.Fingerprint()==fingerprint)
+            {
+                var report=SichuanJson.Read<SichuanRuntimeStatus>(Path.Combine(root,"runtime.json"));
+                if(Fresh(report,pid,DateTime.UtcNow.AddSeconds(-5))&&report!.State=="active")
+                {pipe.Open(fingerprint);return $"已连接游戏 {pid} · 本机管道";}
+            }
         }
+        catch(BD2.LocalIpc.LeaseRevokedException){}
+        catch(TimeoutException){}
+        catch(IOException){}
         // Resolve the required interfaces and compile against installed metadata before any injection.
         var exe=game.MainModule?.FileName??throw new InvalidOperationException("无法读取游戏路径，请使用与游戏相同的权限运行。");
         var client=Path.Combine(Path.GetDirectoryName(exe)!,Path.GetFileNameWithoutExtension(exe)+"_Data","Managed","Assembly-CSharp.dll");
         progress?.Invoke("正在识别连连看接口并生成适配组件，首次连接可能需要数秒…");
         PreparedHook prepared;
-        try { prepared=HookCompiler.Prepare(Path.GetDirectoryName(client)!);SichuanJson.Write(Path.Combine(root,"compatibility.json"),prepared.Report); }
+        try { prepared=HookCompiler.Prepare(Path.GetDirectoryName(client)!,daily:daily);SichuanJson.Write(Path.Combine(root,"compatibility.json"),prepared.Report); }
         catch(CompatibilityException ex) { SichuanJson.Write(Path.Combine(root,"compatibility.json"),ex.Report);throw; }
         catch(Exception ex) { SichuanJson.Write(Path.Combine(root,"compatibility.json"),new{Status="unsupported",Error=ex.Message,Injection=false});throw; }
         var payload=prepared.Payload;string sha=Convert.ToHexString(SHA256.HashData(payload));
@@ -48,17 +52,18 @@ public sealed class SichuanConnection
         var attempt=DateTime.UtcNow;
         state.Address=injector.Inject(payload,"BD2Sichuan.Runtime","Loader","Load").ToInt64();
         SichuanJson.Write(path,state);
-        for(int i=0;i<50;i++)
+        var deadline=DateTime.UtcNow.AddSeconds(35);
+        while(DateTime.UtcNow<deadline)
         {
             var report=SichuanJson.Read<SichuanRuntimeStatus>(Path.Combine(root,"runtime.json"));
             if(Fresh(report,pid,attempt))
             {
                 if(report!.State=="error")throw new InvalidOperationException(report.Error);
-                if(report.State=="active")return $"已连接游戏 {pid} · 连连看独立组件";
+                if(report.State=="active"){pipe.Open(fingerprint);return $"已连接游戏 {pid} · 本机管道";}
             }
             Thread.Sleep(100);
         }
-        throw new InvalidOperationException("组件尚未返回连接状态，请等待游戏完成加载。请勿反复注入；必要时正常重启游戏。");
+        throw new InvalidOperationException("组件交接尚未完成，请等待游戏界面恢复或当前操作结算后重新连接；游戏可以保持运行。");
     }
     public static Process FindGame()
     {

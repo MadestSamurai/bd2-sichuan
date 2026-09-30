@@ -19,6 +19,8 @@ namespace BD2Sichuan.Runtime
             capture=new SichuanCapture();capture.Start(pump);
             heartbeat=new Timer(_=>Loader.WriteStatus("active",""),null,0,1000);
         }
+        internal void PrepareHandoff(){capture?.PrepareHandoff();}
+        internal string HandoffBusy()=>capture!=null&&capture.Writing?"snapshot writer":network!=null&&network.Waiting?"pending game response":"";
         internal void Stop(){heartbeat?.Dispose();heartbeat=null;capture?.Dispose();capture=null;network?.Dispose();network=null;}
     }
 }

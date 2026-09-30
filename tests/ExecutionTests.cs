@@ -55,23 +55,23 @@ internal static class ExecutionTests
         var controller=new SichuanAutomationController();s=Board();var command=controller.Start(true,s,now);Check(controller.Active,"controller armed");
         s.Run=new(){OwnerId=command.OwnerId,State="waiting",Reason="paused",ConfirmedPairs=4};controller.Observe(s,now);Check(controller.Active&&controller.CompletedPairs==4,"observer preserves pause");
         s.Run.State="completed";s.Run.Reason="board_cleared";controller.Observe(s,now);Check(!controller.Active&&controller.Status.Contains("清空"),"observer completes successful clear");
-        var files=new SichuanLiveFiles(Path.Combine(evidence,"control"));
+        var files=new SichuanLiveFiles(Path.Combine(evidence,"control"));TestTransport.Start(files.Root,"enabled-until.txt|execution-lease.json|run-command.json|latest.json");
         using(var link=new SichuanControlLink(files))
         {
             c=Command();c.CreatedUtcTicks=DateTime.UtcNow.Ticks;link.Start(c);
-            var before=JsonSerializer.Deserialize<SichuanActionLease>(File.ReadAllText(Path.Combine(files.Root,"execution-lease.json")))!;
+            var before=JsonSerializer.Deserialize<SichuanActionLease>(TestTransport.Text(Path.Combine(files.Root,"execution-lease.json")))!;
             Thread.Sleep(650); // No UI dispatcher exists: renewal must still happen.
-            var after=JsonSerializer.Deserialize<SichuanActionLease>(File.ReadAllText(Path.Combine(files.Root,"execution-lease.json")))!;
+            var after=JsonSerializer.Deserialize<SichuanActionLease>(TestTransport.Text(Path.Combine(files.Root,"execution-lease.json")))!;
             Check(after.UntilUtcTicks>before.UntilUtcTicks,"heartbeat independent of UI dispatcher");
             Check(after.UntilUtcTicks<DateTime.UtcNow.AddSeconds(3.1).Ticks,"crashed UI lease bounded to three seconds");
             link.Stop("user_stop");Thread.Sleep(350);
-            var stopped=JsonSerializer.Deserialize<SichuanActionLease>(File.ReadAllText(Path.Combine(files.Root,"execution-lease.json")))!;
+            var stopped=JsonSerializer.Deserialize<SichuanActionLease>(TestTransport.Text(Path.Combine(files.Root,"execution-lease.json")))!;
             Check(stopped.UntilUtcTicks==0&&stopped.StopReason=="user_stop","late heartbeat cannot re-arm explicit stop");
-            using var wire=new MemoryStream(File.ReadAllBytes(Path.Combine(files.Root,"run-command.json")));
+            using var wire=new MemoryStream(TestTransport.Read(Path.Combine(files.Root,"run-command.json")));
             var decoded=(SichuanRunCommand)new DataContractJsonSerializer(typeof(SichuanRunCommand)).ReadObject(wire)!;
             Check(decoded.Protocol==3&&decoded.OwnerId==c.OwnerId,"GUI to Mono run command wire roundtrip");
         }
-        Check(File.ReadAllText(Path.Combine(files.Root,"enabled-until.txt"))=="0","dispose releases capture");
+        Check(TestTransport.Text(Path.Combine(files.Root,"enabled-until.txt"))=="0","dispose releases capture");
         // Actual recorded boards, compared against existing independent BFS implementation.
         var replayPath="artifacts/validation/sichuan-speed-20260914/runtime35-actions.json";
         var timing=new List<double>();int recorded=0;

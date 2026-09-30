@@ -102,9 +102,9 @@ if(args.Length==2&&args[0]=="--live-snapshot")
 }
 var key1=SichuanLiveFiles.Key(snap);snap.Generation++;Check(SichuanLiveFiles.Key(snap)!=key1,"same board on new level not reused");
 key1=SichuanLiveFiles.Key(snap);snap.SessionId="new process";Check(SichuanLiveFiles.Key(snap)!=key1,"same board on restarted runtime not reused");
-var files=new SichuanLiveFiles(Path.Combine(evidence,"files"));files.Lease(true);var ticks=long.Parse(File.ReadAllText(Path.Combine(files.Root,"enabled-until.txt")));Check(ticks>DateTime.UtcNow.Ticks&&ticks<DateTime.UtcNow.AddSeconds(6).Ticks,"lease bounded to five seconds");
-files.Lease(false);Check(File.ReadAllText(Path.Combine(files.Root,"enabled-until.txt"))=="0","lease explicitly disabled");
-using(var f=File.Create(Path.Combine(files.Root,"latest.json")))new DataContractJsonSerializer(typeof(SichuanSnapshot)).WriteObject(f,snap);
+var files=new SichuanLiveFiles(Path.Combine(evidence,"files"));TestTransport.Start(files.Root,"enabled-until.txt|execution-lease.json|run-command.json|latest.json");files.Lease(true);var ticks=long.Parse(TestTransport.Text(Path.Combine(files.Root,"enabled-until.txt")));Check(ticks>DateTime.UtcNow.Ticks&&ticks<DateTime.UtcNow.AddSeconds(6).Ticks,"lease bounded to five seconds");
+files.Lease(false);Check(TestTransport.Text(Path.Combine(files.Root,"enabled-until.txt"))=="0","lease explicitly disabled");
+using(var f=new MemoryStream()){new DataContractJsonSerializer(typeof(SichuanSnapshot)).WriteObject(f,snap);TestTransport.PublishBytes(Path.Combine(files.Root,"latest.json"),f.ToArray());}
 var read=files.Read()!;Check(read.Cells.SequenceEqual(fixture)&&SichuanLiveFiles.Key(read)==SichuanLiveFiles.Key(snap),"Mono-compatible serializer roundtrip");
 Check(SichuanLiveFiles.Invalid(read,now,false)==null,"Hook serializer accepted by GUI validator");
 read.Cells=null!;Check(SichuanLiveFiles.Invalid(read,now,false)!=null,"null wire cells rejected");

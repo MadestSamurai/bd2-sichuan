@@ -22,7 +22,7 @@ public sealed class SichuanConnection
     {
         using var game=FindGame();int pid=game.Id;long start=game.StartTime.ToUniversalTime().Ticks;
         string fingerprint=HookCompiler.ToolFingerprint+(daily?".daily":"");var path=Path.Combine(root,"connection.json");
-        var pipe=BD2.LocalIpc.DesktopFiles.Connect(root,pid,start);
+        var pipe=BD2.LocalIpc.DesktopFiles.Connect(root,pid,start); if(BD2.LocalIpc.HostedConnection.TryOpen(pipe,pid,start))return "已使用日常助手的统一连接";
         try
         {
             if(pipe.Fingerprint()==fingerprint)

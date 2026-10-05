@@ -10,6 +10,9 @@ using BD2Sichuan;
 namespace BD2Sichuan.Desktop;
 public partial class SichuanWindow : Window
 {
+ public bool HostedAutomationEnabled => automation.Active || automationPreparing || connecting;
+    private bool automationPreparing;
+
     private WindowLanguage? language;
     private readonly SichuanLiveFiles files;
     private readonly string settingsPath;
@@ -83,6 +86,11 @@ public partial class SichuanWindow : Window
     private async void Auto_Click(object sender,RoutedEventArgs e)=>await StartAutomation(true);
     private void Stop_Click(object sender,RoutedEventArgs e)=>StopAutomation("user_stop");
     private async Task StartAutomation(bool automatic)
+    {
+        if(automationPreparing)return;automationPreparing=true;
+        try { await StartAutomationCore(automatic); } finally { automationPreparing=false; }
+    }
+    private async Task StartAutomationCore(bool automatic)
     {
         if(!ApplyInterval())return;
         await EnableHints();

@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **Standalone maintenance has ended.** This tool is now maintained in [Dustweave](https://github.com/MadestSamurai/Dustweave), including updates, downloads and issue reports. Source: [src/Sichuan](https://github.com/MadestSamurai/Dustweave/tree/main/src/Sichuan). This repository is retained as a read-only historical archive; its MIT license and attribution remain unchanged.
+
 # BD2 Sichuan
 
 > **Free & open source:** Official releases are provided free by GitHub **MadestSamurai** · Bilibili **MadSamurai**. [Official downloads](https://github.com/MadestSamurai/bd2-sichuan/releases) · [Source and risk notice](DISTRIBUTION.md#english). Third-party fees do not imply the author’s involvement, endorsement or support.

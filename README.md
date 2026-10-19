@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **本仓库已停止独立维护。** 工具已迁入 [Dustweave（织尘）](https://github.com/MadestSamurai/Dustweave)，后续更新、问题反馈和下载请前往该仓库。源码位于 [src/Sichuan](https://github.com/MadestSamurai/Dustweave/tree/main/src/Sichuan)。本仓库保留为只读历史档案，原有 MIT 许可与作者署名不变。
+
 # BD2 Sichuan · 连连看助手
 
 > **免费开源：** 作者发布版免费提供，GitHub **MadestSamurai** · B站 **MadSamurai**。[官方下载](https://github.com/MadestSamurai/bd2-sichuan/releases) · [来源与风险说明](DISTRIBUTION.md)。第三方收费不代表作者参与、背书或提供服务。
